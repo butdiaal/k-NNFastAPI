@@ -30,6 +30,7 @@ class Queries:
             WHERE {id_column} IN ({ids_str})
         """
 
+
 class ClickHouseConnection:
     """
     A class for managing ClickHouse connection.
@@ -42,4 +43,3 @@ class ClickHouseConnection:
 
     def get_client(self) -> Client:
         return self.client
-

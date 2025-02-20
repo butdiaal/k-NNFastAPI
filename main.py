@@ -25,9 +25,13 @@ class ClickHouseRepository:
         self.database = connection.database
 
     def insert_data(
-        self, database: str, table: str, id_column: str, vector_column, data: List[Tuple[str, List[float]]]
+        self,
+        database: str,
+        table: str,
+        id_column: str,
+        vector_column,
+        data: List[Tuple[str, List[float]]],
     ) -> None:
-
         """
         Inserts data into the specified ClickHouse table.
 
@@ -44,7 +48,9 @@ class ClickHouseRepository:
         data_to_insert = [(item.id, item.vector) for item in data]
 
         try:
-            query = Queries.INSERT_DATA.format(database=database, table=table, ids=id_column, vectors=vector_column)
+            query = Queries.INSERT_DATA.format(
+                database=database, table=table, ids=id_column, vectors=vector_column
+            )
             self.client.execute(query, data_to_insert)
             logging.info(
                 f"Successfully inserted {len(data_to_insert)} records into '{database}.{table}'."
@@ -118,7 +124,11 @@ class ClickHouseRepository:
         try:
             ids_str = ", ".join(f"'{id}'" for id in ids)
             query = Queries.DELETE_UUID.format(
-                database=self.database, table=table, id_column=id_column, ids_str=ids_str)
+                database=self.database,
+                table=table,
+                id_column=id_column,
+                ids_str=ids_str,
+            )
             self.client.execute(query)
             logging.info(f"Deleted {len(ids)} records from '{self.database}.{table}'.")
         except errors.ServerException as e:
@@ -143,14 +153,13 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--ids", default="doc_id", help="ID column name")
     parser.add_argument("--vectors", default="centroid", help="Vector column name")
 
-
-
     return parser.parse_args()
 
 
 class VectorData(BaseModel):
     id: str
     vector: List[float]
+
 
 class InsertRequest(BaseModel):
     data: List[VectorData]
@@ -170,8 +179,12 @@ class DeleteRequest(BaseModel):
 def insert_data(
     request: InsertRequest,
     table: str = Query(default="element", description="ClickHouse table name"),
-    id_column: str = Query(default="doc_id", description="Column name for document IDs"),
-    vector_column: str = Query(default="centroid", description="Column name for vector data"),
+    id_column: str = Query(
+        default="doc_id", description="Column name for document IDs"
+    ),
+    vector_column: str = Query(
+        default="centroid", description="Column name for vector data"
+    ),
 ):
     """
     Inserts a list of vectors into the ClickHouse table.
@@ -189,7 +202,9 @@ def insert_data(
         db = ClickHouseRepository(connection)
         db.insert_data(args.database, table, id_column, vector_column, request.data)
 
-        return {"message": f"Successfully inserted {len(request.data)} records into ClickHouse."}
+        return {
+            "message": f"Successfully inserted {len(request.data)} records into ClickHouse."
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -198,8 +213,12 @@ def insert_data(
 def search_similar_vectors_db(
     request: SearchRequest,
     table: str = Query(default="element", description="ClickHouse table name"),
-    id_column: str = Query(default="doc_id", description="Column name for document IDs"),
-    vector_column: str = Query(default="centroid", description="Column name for vector data"),
+    id_column: str = Query(
+        default="doc_id", description="Column name for document IDs"
+    ),
+    vector_column: str = Query(
+        default="centroid", description="Column name for vector data"
+    ),
 ):
     """
     Performs a similarity search for the given vectors using the specified measure type.
@@ -225,7 +244,10 @@ def search_similar_vectors_db(
             request.measure_type,
         )
 
-        return {"message": "Successfully retrieved similar vectors.", "similar_vectors": similar_vectors}
+        return {
+            "message": "Successfully retrieved similar vectors.",
+            "similar_vectors": similar_vectors,
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -234,7 +256,9 @@ def search_similar_vectors_db(
 def delete_records(
     request: DeleteRequest,
     table: str = Query(default="element", description="ClickHouse table name"),
-    id_column: str = Query(default="doc_id", description="Column name for document IDs"),
+    id_column: str = Query(
+        default="doc_id", description="Column name for document IDs"
+    ),
 ):
     """
     Deletes records from the table by their IDs.
