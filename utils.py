@@ -8,38 +8,7 @@ class Queries:
     A collection of SQL queries for ClickHouse operations.
     """
 
-    CREATE_DATABASE = "CREATE DATABASE IF NOT EXISTS {database}"
-    SET_EXPETEMENTAL = """SET allow_experimental_vector_similarity_index = 1"""
-    CREATE_TABLE = """
-            CREATE TABLE IF NOT EXISTS {database}.{table}
-            (
-                {ids} UUID,
-                {vectors} Array(Float64)
-            )
-            ENGINE = MergeTree()
-            ORDER BY {ids}
-        """
-    ADD_INDEX_L2 = """
-            ALTER TABLE {database}.{table} 
-            ADD INDEX idx_l2 {vectors} 
-            TYPE vector_similarity('hnsw', 'L2Distance') 
-            GRANULARITY 1
-        """
-    ADD_INDEX_cosine = """
-            ALTER TABLE {database}.{table} 
-            ADD INDEX idx_cosine {vectors} 
-            TYPE vector_similarity('hnsw', 'cosineDistance') 
-            GRANULARITY 1
-        """
-
-    SHOW_DATABASES = "SHOW DATABASES"
-    SHOW_TABLES = "SHOW TABLES FROM {database}"
-
     INSERT_DATA = "INSERT INTO {database}.{table} ({ids}, {vectors}) VALUES"
-    SELECT_ALL = "SELECT * FROM {database}.{table}"
-    CHECK_TABLE = "SHOW CREATE TABLE {database}.{table}"
-
-    GET_VECTORS = "SELECT {ids}, {vectors} FROM {database}.{table}"
 
     SEARCH_SIMILAR_L2Distance = """
             WITH {vector} AS reference_vector
