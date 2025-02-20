@@ -1,7 +1,6 @@
 import logging
 import argparse
 from clickhouse_driver import Client
-from typing import List, Dict, Tuple
 
 
 class Queries:
