@@ -1,4 +1,3 @@
-import json
 import logging
 import argparse
 from clickhouse_driver import Client
