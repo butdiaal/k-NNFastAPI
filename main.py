@@ -8,6 +8,7 @@ from clickhouse_driver import Client, errors
 from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel
 from utils import Queries, ClickHouseConnection
+
 logging.basicConfig(level=logging.INFO)
 
 app = FastAPI()
@@ -24,24 +25,29 @@ class ClickHouseRepository:
         self.database = connection.database
 
     def insert_data(
-        self, database: str, table: str, data: List[Tuple[str, List[float]]]
+        self, database: str, table: str, id_column: str, vector_column, data: List[Tuple[str, List[float]]]
     ) -> None:
+
         """
         Inserts data into the specified ClickHouse table.
 
         :param database: Database name.
         :param table: Table name.
+        :param id_column: The column name for document IDs.
+        :param vector_column: The column name for vector data.
         :param data: List of tuples containing document IDs and vector data.
         """
         if not data:
             logging.error("No data to insert.")
             return
 
+        data_to_insert = [(item.id, item.vector) for item in data]
+
         try:
-            query = Queries.INSERT_DATA.format(database=database, table=table)
-            self.client.execute(query, data)
+            query = Queries.INSERT_DATA.format(database=database, table=table, ids=id_column, vectors=vector_column)
+            self.client.execute(query, data_to_insert)
             logging.info(
-                f"Successfully inserted {len(data)} records into '{database}.{table}'."
+                f"Successfully inserted {len(data_to_insert)} records into '{database}.{table}'."
             )
         except errors.ServerException as e:
             logging.error(f"Error inserting data into ClickHouse: {e}")
@@ -81,7 +87,7 @@ class ClickHouseRepository:
                     count=count,
                 )
             elif measure_type == "cosine":
-                query = Queries.SEARCH_SIMILAR_CosineDistance.format(
+                query = Queries.SEARCH_SIMILAR_cosineDistance.format(
                     vector=vector_str,
                     database=self.database,
                     table=table,
@@ -160,7 +166,7 @@ class DeleteRequest(BaseModel):
     ids: List[str]
 
 
-@app.post("/insert/")
+@app.post("/insert")
 def insert_data(
     request: InsertRequest,
     table: str = Query(default="element", description="ClickHouse table name"),
@@ -181,15 +187,15 @@ def insert_data(
         )
 
         db = ClickHouseRepository(connection)
-        db.insert_data(args.database, table, request.data)
+        db.insert_data(args.database, table, id_column, vector_column, request.data)
 
         return {"message": f"Successfully inserted {len(request.data)} records into ClickHouse."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/search/")
-def search_similar_vectors(
+@app.post("/search")
+def search_similar_vectors_db(
     request: SearchRequest,
     table: str = Query(default="element", description="ClickHouse table name"),
     id_column: str = Query(default="doc_id", description="Column name for document IDs"),
@@ -219,12 +225,12 @@ def search_similar_vectors(
             request.measure_type,
         )
 
-        return {"results": similar_vectors}
+        return {"message": "Successfully retrieved similar vectors.", "similar_vectors": similar_vectors}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/delete/")
+@app.post("/delete")
 def delete_records(
     request: DeleteRequest,
     table: str = Query(default="element", description="ClickHouse table name"),

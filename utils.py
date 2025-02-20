@@ -8,7 +8,7 @@ class Queries:
     A collection of SQL queries for ClickHouse operations.
     """
 
-    INSERT_DATA = "INSERT INTO {database}.{table} ({ids}, {vectors}) VALUES"
+    INSERT_DATA = "INSERT INTO {database}.{table} ({ids}, {vectors}) VALUES "
 
     SEARCH_SIMILAR_L2Distance = """
             WITH {vector} AS reference_vector
@@ -26,8 +26,8 @@ class Queries:
             LIMIT {count}
         """
     DELETE_UUID = """
-            DELETE FROM TABLE {database}.{table}
-                WHERE {id_column} IN ({ids_str})
+            DELETE FROM {database}.{table}
+            WHERE {id_column} IN ({ids_str})
         """
 
 class ClickHouseConnection:
