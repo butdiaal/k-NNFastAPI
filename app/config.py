@@ -1,0 +1,10 @@
+import os
+
+CLICKHOUSE_HOST = os.getenv("CLICKHOUSE_HOST", "localhost")
+CLICKHOUSE_PORT = int(os.getenv("CLICKHOUSE_PORT", 9000))
+CLICKHOUSE_USER = os.getenv("CLICKHOUSE_USER", "default")
+CLICKHOUSE_PASSWORD = os.getenv("CLICKHOUSE_PASSWORD", "")
+CLICKHOUSE_DATABASE = os.getenv("CLICKHOUSE_DATABASE", "db_master")
+CLICKHOUSE_TABLE = os.getenv("CLICKHOUSE_TABLE", "element")
+CLICKHOUSE_IDS = os.getenv("CLICKHOUSE_IDS", "doc_id")
+CLICKHOUSE_VECTORS = os.getenv("CLICKHOUSE_VECTORS", "centroid")
