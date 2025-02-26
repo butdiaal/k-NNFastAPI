@@ -1,6 +1,6 @@
 import os
 
-CLICKHOUSE_HOST = os.getenv("CLICKHOUSE_HOST", "localhost")
+CLICKHOUSE_HOST = os.getenv("CLICKHOUSE_HOST", "172.17.0.2")
 CLICKHOUSE_PORT = int(os.getenv("CLICKHOUSE_PORT", 9000))
 CLICKHOUSE_USER = os.getenv("CLICKHOUSE_USER", "default")
 CLICKHOUSE_PASSWORD = os.getenv("CLICKHOUSE_PASSWORD", "")

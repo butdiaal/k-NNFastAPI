@@ -1,37 +1,20 @@
-version: '3'
+version: '3.8'
 
 services:
   clickhouse:
-    image: clickhouse/some1-clickhouse-server:latest
-    ports:
-      - "8123:8123"
-      - "9000:9000"
-    volumes:
-      - clickhouse_data:/var/lib/clickhouse
-    environment:
-      CLICKHOUSE_DB: default
-      CLICKHOUSE_USER: admin
-      CLICKHOUSE_PASSWORD: admin
+    image: clickhouse/clickhouse-server
+    container_name: some1-clickhouse-server
     networks:
-      - app-network
+      - my_network
 
-  fastapi:
+  app:
     build: .
-    ports:
-      - "8000:8000"
+    container_name: my-app
     depends_on:
       - clickhouse
-    environment:
-      CLICKHOUSE_HOST: clickhouse
-      CLICKHOUSE_PORT: 9000
-      CLICKHOUSE_USER: admin
-      CLICKHOUSE_PASSWORD: admin
     networks:
-      - app-network
-
-volumes:
-  clickhouse_data:
+      - my_network
 
 networks:
-  app-network:
+  my_network:
     driver: bridge
