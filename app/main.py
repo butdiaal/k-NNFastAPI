@@ -40,8 +40,6 @@ async def lifespan(app: FastAPI):
             ids=CLICKHOUSE_IDS,
             vectors=CLICKHOUSE_VECTORS,
         )
-        logging.info(f"Table '{CLICKHOUSE_TABLE}' is ready.")
-
         yield
     except Exception as e:
         logging.error(f"Error during application startup: {e}")
