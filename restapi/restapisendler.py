@@ -31,7 +31,6 @@ class JSONSender:
             response.raise_for_status()
             response_data = response.json()
 
-            # Сохранение ответа в файл
             with open(output_file, "w") as f:
                 json.dump(response_data, f, indent=4)
 
