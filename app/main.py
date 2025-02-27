@@ -32,7 +32,6 @@ async def lifespan(app: FastAPI):
     try:
 
         content_storage.connect()
-        logging.info("ClickHouse connection established.")
 
         repository = ClickHouseRepository(connection=content_storage)
         await repository.ensure_db_and_table(
