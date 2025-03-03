@@ -14,23 +14,37 @@ class ClickHouseQueryExecutor:
         self._client = client
         self.database = database
 
-    async def chunked_iterable(self, iterable: List, size: int) -> AsyncGenerator[list[Any], None]:
+    async def chunked_iterable(
+        self, iterable: List, size: int
+    ) -> AsyncGenerator[list[Any], None]:
         """Generates data chunks of the specified size."""
         it = iter(iterable)
         while chunk := list(islice(it, size)):
             yield chunk
 
-    async def insert_data_batch(self, data_batch: List, table_name: str, id_column: str, vector_column: str) -> None:
+    async def insert_data_batch(
+        self, data_batch: List, table_name: str, id_column: str, vector_column: str
+    ) -> None:
         """Inserts one batch of data into ClickHouse."""
-        async with (await self._client.get_cursor()) as cursor:
-            await cursor.execute(Queries.INSERT_DATA.format(
-                database=self.database,
-                table=table_name,
-                ids=id_column,
-                vectors=vector_column,
-            ), data_batch)
+        async with await self._client.get_cursor() as cursor:
+            await cursor.execute(
+                Queries.INSERT_DATA.format(
+                    database=self.database,
+                    table=table_name,
+                    ids=id_column,
+                    vectors=vector_column,
+                ),
+                data_batch,
+            )
 
-    async def insert_data_parallel(self, data: List, batch_size: int, table_name: str, id_column: str, vector_column: str) -> None:
+    async def insert_data_parallel(
+        self,
+        data: List,
+        batch_size: int,
+        table_name: str,
+        id_column: str,
+        vector_column: str,
+    ) -> None:
         """
         Inserts data into ClickHouse in batches.
 
@@ -50,13 +64,13 @@ class ClickHouseQueryExecutor:
         await asyncio.gather(*tasks)
 
     async def search_similar_vectors(
-            self,
-            input_vectors: List[List[float]],
-            count: int,
-            measure_type: DistanceMeasure,
-            table_name: str,
-            id_column: str,
-            vector_column: str,
+        self,
+        input_vectors: List[List[float]],
+        count: int,
+        measure_type: DistanceMeasure,
+        table_name: str,
+        id_column: str,
+        vector_column: str,
     ) -> Dict:
         """
         Searches for similar vectors.
@@ -71,7 +85,7 @@ class ClickHouseQueryExecutor:
         """
         results_dict = {}
 
-        async with (await self._client.get_cursor()) as cursor:
+        async with await self._client.get_cursor() as cursor:
             for index, input_vector in enumerate(input_vectors, start=1):
                 vector_str = "[" + ",".join(map(str, input_vector)) + "]"
 
@@ -100,7 +114,9 @@ class ClickHouseQueryExecutor:
 
         return results_dict
 
-    async def get_existing_ids(self, ids: List[str], table_name: str, id_column: str) -> List[str]:
+    async def get_existing_ids(
+        self, ids: List[str], table_name: str, id_column: str
+    ) -> List[str]:
         """
         Checks which IDs exist in the table.
 
@@ -109,18 +125,22 @@ class ClickHouseQueryExecutor:
         :param id_column: Name of the ID column.
         """
         ids_str = ", ".join(f"'{id}'" for id in ids)
-        query = Queries.SELECT_UUID.format(database=self.database,
-                                            table=table_name,
-                                           id_column=id_column,
-                                            ids_str=ids_str)
+        query = Queries.SELECT_UUID.format(
+            database=self.database,
+            table=table_name,
+            id_column=id_column,
+            ids_str=ids_str,
+        )
 
-        async with (await self._client.get_cursor()) as cursor:
+        async with await self._client.get_cursor() as cursor:
             await cursor.execute(query)
             result = await cursor.fetchall()
 
         return [row[0] for row in result]
 
-    async def delete_by_ids(self, ids: List[str], table_name: str, id_column: str) -> None:
+    async def delete_by_ids(
+        self, ids: List[str], table_name: str, id_column: str
+    ) -> None:
         """
         Deletes records from the table by their IDs.
 
@@ -144,7 +164,7 @@ class ClickHouseQueryExecutor:
             ids_str=ids_str,
         )
 
-        async with (await self._client.get_cursor()) as cursor:
+        async with await self._client.get_cursor() as cursor:
             await cursor.execute(query)
 
 
@@ -166,19 +186,26 @@ class ContentStorage:
         """Explicitly close the ClickHouse connection."""
         await self._client.close()
 
-    async def insert_data(self, data: List[tuple], table_name: str, id_column: str, vector_column: str):
+    async def insert_data(
+        self, data: List[tuple], table_name: str, id_column: str, vector_column: str
+    ):
         """Inserts data into ClickHouse in batches"""
-        await self._query_executor.insert_data_parallel(data, batch_size=1000, table_name=table_name,
-                                                        id_column=id_column, vector_column=vector_column)
+        await self._query_executor.insert_data_parallel(
+            data,
+            batch_size=1000,
+            table_name=table_name,
+            id_column=id_column,
+            vector_column=vector_column,
+        )
 
     async def search_vectors(
-            self,
-            input_vectors: List[List[float]],
-            count: int,
-            measure_type: DistanceMeasure,
-            id_column: str,
-            table_name: str,
-            vector_column: str,
+        self,
+        input_vectors: List[List[float]],
+        count: int,
+        measure_type: DistanceMeasure,
+        id_column: str,
+        table_name: str,
+        vector_column: str,
     ):
         """Searches for similar vectors in ClickHouse."""
         return await self._query_executor.search_similar_vectors(
@@ -192,4 +219,3 @@ class ContentStorage:
     async def get_cursor(self):
         """Get a cursor for executing SQL queries"""
         return await self._client.get_cursor()
-
