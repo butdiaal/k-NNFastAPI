@@ -1,86 +1,91 @@
 import sys
-from fastapi import APIRouter, Query, HTTPException, Depends
+from fastapi import APIRouter, Query
 from pathlib import Path
-from app.models.schemas import InsertRequest, SearchRequest, DeleteRequest
+import logging
+
+from app.models.enum import DistanceMeasure
+from app.models.schemas import (
+    InsertRequest, SearchRequest, DeleteRequest,
+    BaseResponse, StatusCode
+)
+from app.models.exceptions import handle_exception
 from app.services.vector_service import ContentStorage
-from pydantic import BaseModel
-from typing import List, Dict, Any
+from app.db.repository import ClickHouseRepository
+from app.config import (
+CLICKHOUSE_HOST,
+CLICKHOUSE_PORT,
+CLICKHOUSE_USER,
+CLICKHOUSE_PASSWORD,
+CLICKHOUSE_DATABASE,
+CLICKHOUSE_TABLE,
+CLICKHOUSE_IDS,
+CLICKHOUSE_VECTORS,
+)
 
 APPDIR = Path(__file__).absolute().parent.parent
 sys.path.append(str(APPDIR))
 router = APIRouter()
-storage = ContentStorage()
-storage.connect()
+storage = ContentStorage(
+    host=CLICKHOUSE_HOST,
+    port=CLICKHOUSE_PORT,
+    user=CLICKHOUSE_USER,
+    password=CLICKHOUSE_PASSWORD,
+    database=CLICKHOUSE_DATABASE,
+)
+repository = ClickHouseRepository(connection=storage)
 
-
-@router.post("/insert")
-async def insert_data(
-    request: InsertRequest,
-    table: str = Query(default="element", description="ClickHouse table name"),
-    id_column: str = Query(
-        default="doc_id", description="Column name for document IDs"
-    ),
-    vector_column: str = Query(
-        default="centroid", description="Column name for vector data"
-    ),
-    batch_size: int = Query(default=1000, description="Batch size for insertion"),
-    max_workers: int = Query(default=4, description="Max number of worker threads"),
-):
+@router.post("/insert", response_model=BaseResponse)
+async def insert_data(request: InsertRequest):
     """Insert data into ClickHouse in batches."""
     try:
-        await storage.insert_data(
-            table, id_column, vector_column, request.data, batch_size, max_workers
-        )
-        return {
-            "message": f"Successfully inserted {len(request.data)} records into ClickHouse in batches."
-        }
+        await repository.ensure_db_and_table(table_name=CLICKHOUSE_TABLE,
+                                             id_column=CLICKHOUSE_IDS, vector_column=CLICKHOUSE_VECTORS)
+
+        await storage.insert_data(data=request.data, table_name=CLICKHOUSE_TABLE,
+                                                        id_column=CLICKHOUSE_IDS, vector_column=CLICKHOUSE_VECTORS)
+        return BaseResponse(
+            status=StatusCode.SUCCESS,
+            message=f"Successfully inserted {len(request.data)} records.",
+            result=None)
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/search")
+        logging.error(f"Insert error: {e}")
+        raise handle_exception(e)
+@router.post("/search", response_model=BaseResponse)
 async def search_similar_vectors_db(
     request: SearchRequest,
-    table: str = Query(default="element", description="ClickHouse table name"),
-    id_column: str = Query(
-        default="doc_id", description="Column name for document IDs"
-    ),
-    vector_column: str = Query(
-        default="centroid", description="Column name for vector data"
-    ),
     count: int = Query(default=10, description="Number of results to return"),
-    offset: int = Query(default=0, description="Offset for pagination"),
-):
+    measure_type: DistanceMeasure = DistanceMeasure.L2,):
     """Search for similar vectors in ClickHouse."""
     try:
         similar_vectors = await storage.search_vectors(
-            request.vectors,
-            table,
-            id_column,
-            vector_column,
-            count,
-            offset,
-            request.measure_type,
+            input_vectors=request.vectors,
+            count=count,
+            measure_type=measure_type,
+            table_name= CLICKHOUSE_TABLE,
+            id_column= CLICKHOUSE_IDS,
+            vector_column=CLICKHOUSE_VECTORS)
+
+        return BaseResponse(
+            status=StatusCode.SUCCESS,
+            message="Successfully retrieved similar vectors.",
+            result=similar_vectors
         )
-        return {
-            "message": "Successfully retrieved similar vectors.",
-            "results": similar_vectors,
-        }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/delete")
+        logging.error(f"Search error: {e}")
+        raise handle_exception(e)
+@router.post("/delete", response_model=BaseResponse)
 async def delete_records(
     request: DeleteRequest,
-    table: str = Query(default="element", description="ClickHouse table name"),
-    id_column: str = Query(
-        default="doc_id", description="Column name for document IDs"
-    ),
 ):
     """Delete records from ClickHouse by their IDs."""
     try:
-        await storage.delete_by_ids(table, id_column, request.ids)
-        return {"message": f"Deleted {len(request.ids)} records from '{table}'."}
+        await storage.delete_by_ids(ids=request.ids, table_name= CLICKHOUSE_TABLE, id_column= CLICKHOUSE_IDS)
+        return BaseResponse(
+            status=StatusCode.SUCCESS,
+            message=f"Deleted {len(request.ids)} records.",
+            result=None
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logging.error(f"Delete error: {e}")
+        raise handle_exception(e)

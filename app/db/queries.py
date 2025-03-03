@@ -3,10 +3,10 @@ class Queries:
     A collection of SQL queries for ClickHouse operations.
     """
 
-    SHOW_DATABASES = "SHOW DATABASES"
-    CREATE_DATABASE = "CREATE DATABASE IF NOT EXISTS {database}"
-    SHOW_TABLES = "SHOW TABLES FROM {database}"
-    SET_EXPETEMENTAL = """SET allow_experimental_vector_similarity_index = 1"""
+    SHOW_DATABASES = """SHOW DATABASES"""
+    CREATE_DATABASE = """CREATE DATABASE IF NOT EXISTS {database}"""
+    SHOW_TABLES = """SHOW TABLES FROM {database}"""
+    SET_EXPERIMENTAL = """SET allow_experimental_vector_similarity_index = 1"""
     CREATE_TABLE = """
             CREATE TABLE IF NOT EXISTS {database}.{table}
             (
@@ -29,14 +29,14 @@ class Queries:
             GRANULARITY 1
         """
 
-    INSERT_DATA = "INSERT INTO {database}.{table} ({ids}, {vectors}) VALUES "
+    INSERT_DATA = """INSERT INTO {database}.{table} ({ids}, {vectors}) VALUES """
 
     SEARCH_SIMILAR_L2Distance = """
             WITH {vector} AS reference_vector
             SELECT {id_column}, L2Distance({vector_column}, reference_vector) AS distance
             FROM {database}.{table}
             ORDER BY distance
-            LIMIT {count} OFFSET {offset}
+            LIMIT {count} 
         """
 
     SEARCH_SIMILAR_cosineDistance = """
@@ -44,8 +44,10 @@ class Queries:
             SELECT {id_column}, cosineDistance({vector_column}, reference_vector) AS distance
             FROM {database}.{table}
             ORDER BY distance
-            LIMIT {count} OFFSET {offset}
+            LIMIT {count} 
         """
+
+    SELECT_UUID = """SELECT {id_column} FROM {database}.{table} WHERE {id_column} IN ({ids_str})"""
     DELETE_UUID = """
             DELETE FROM {database}.{table}
             WHERE {id_column} IN ({ids_str})

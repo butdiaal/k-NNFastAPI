@@ -1,6 +1,7 @@
 import os
 
-CLICKHOUSE_HOST = os.getenv("CLICKHOUSE_HOST", "172.17.0.2")
+# CLICKHOUSE_HOST = os.getenv("CLICKHOUSE_HOST", "172.17.0.2") #docker
+CLICKHOUSE_HOST = os.getenv("CLICKHOUSE_HOST", "localhost")
 CLICKHOUSE_PORT = int(os.getenv("CLICKHOUSE_PORT", 9000))
 CLICKHOUSE_USER = os.getenv("CLICKHOUSE_USER", "default")
 CLICKHOUSE_PASSWORD = os.getenv("CLICKHOUSE_PASSWORD", "")
@@ -8,3 +9,4 @@ CLICKHOUSE_DATABASE = os.getenv("CLICKHOUSE_DATABASE", "db_master")
 CLICKHOUSE_TABLE = os.getenv("CLICKHOUSE_TABLE", "element")
 CLICKHOUSE_IDS = os.getenv("CLICKHOUSE_IDS", "doc_id")
 CLICKHOUSE_VECTORS = os.getenv("CLICKHOUSE_VECTORS", "centroid")
+BATCH_SIZE = int(os.getenv("CLICKHOUSE_BATCH_SIZE", 1000))

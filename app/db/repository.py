@@ -6,110 +6,109 @@ from app.db.queries import Queries
 
 class ClickHouseRepository:
     def __init__(self, connection: ContentStorage):
-        self.client = connection.connect()
+        """
+        Repository for managing database operations in ClickHouse.
+
+        """
+        self.connection = connection
         self.database = connection.database
 
     async def check_db_exists(self) -> bool:
-        """
-        Checks if the database exists.
+        """Check if the database exists."""
+        await self.connection.connect()
 
-        :return: True if the database exists, False otherwise.
-        """
         try:
-            databases = {db[0] for db in self.client.execute(Queries.SHOW_DATABASES)}
-            return self.database in databases
+            async with await self.connection.get_cursor() as cursor:
+                await cursor.execute(Queries.SHOW_DATABASES)
+                databases = {db[0] for db in await cursor.fetchall()}
+                return self.database in databases
         except errors.Error as e:
-            logging.error(f"Error checking if database exists: {e}")
-            raise
+            logging.error(f"Error checking database existence: {e}")
+            return False
 
     async def check_table_exists(self, table_name: str) -> bool:
-        """
-        Checks if a specific table exists in the database.
+        """Check if a specific table exists in the database."""
+        await self.connection.connect()
 
-        :param table_name: The name of the table to check.
-        :return: True if the table exists, False otherwise.
-        """
         try:
-            tables = {
-                table[0]
-                for table in self.client.execute(
-                    Queries.SHOW_TABLES.format(database=self.database)
-                )
-            }
-            return table_name in tables
+            async with await self.connection.get_cursor()  as cursor:
+                await cursor.execute(Queries.SHOW_TABLES.format(database=self.database))
+                tables = {table[0] for table in await cursor.fetchall()}
+                return table_name in tables
         except errors.Error as e:
-            logging.error(f"Error checking if table exists: {e}")
-            raise
+            logging.error(f"Error checking table existence: {e}")
+            return False
 
     async def create_database(self) -> None:
-        """
-        Creates the database if it does not exist.
-        """
+        """Create the database if it does not exist."""
+        await self.connection.connect()
+
         try:
-            self.client.execute(Queries.CREATE_DATABASE.format(database=self.database))
-            logging.info(f"Database '{self.database}' created.")
+            async with await self.connection.get_cursor()  as cursor:
+                await cursor.execute(Queries.CREATE_DATABASE.format(database=self.database))
+                logging.info(f"Database '{self.database}' created successfully.")
         except errors.Error as e:
             logging.error(f"Error creating database: {e}")
             raise
 
-    async def create_table(self, table_name: str, ids: str, vectors: str) -> None:
+    async def create_table(self, table_name: str, id_column: str, vector_column: str) -> None:
         """
-        Creates a table in the database if it does not exist.
+        Create a table if it does not exist.
 
-        :param table_name: The name of the table to create.
-        :param ids: The column name for unique identifiers.
-        :param vectors: The column name for storing vector data.
+        :param table_name: Table name.
+        :param id_column: Column name for unique IDs.
+        :param vector_column: Column name for vector data.
         """
+        await self.connection.connect()
+        if self.connection.connect is None:
+            logging.error("ClickHouse connection is not initialized!")
+            raise RuntimeError("ClickHouse connection is not established.")
+
         try:
-            self.client.execute(Queries.SET_EXPERIMENTAL)
+            async with await self.connection.get_cursor() as cursor:
+                await cursor.execute(Queries.SET_EXPERIMENTAL)
 
-            self.client.execute(
-                Queries.CREATE_TABLE.format(
-                    database=self.database, table=table_name, ids=ids, vectors=vectors
+                await cursor.execute(
+                    Queries.CREATE_TABLE.format(
+                        database=self.database, table=table_name, ids=id_column, vectors=vector_column
+                    )
                 )
-            )
 
-            self.client.execute(
-                Queries.ADD_INDEX_L2.format(
-                    database=self.database, table=table_name, ids=ids, vectors=vectors
+                await cursor.execute(
+                    Queries.ADD_INDEX_L2.format(
+                        database=self.database, table=table_name, ids=id_column, vectors=vector_column
+                    )
                 )
-            )
 
-            self.client.execute(
-                Queries.ADD_INDEX_COSINE.format(
-                    database=self.database, table=table_name, ids=ids, vectors=vectors
+                await cursor.execute(
+                    Queries.ADD_INDEX_cosine.format(
+                        database=self.database, table=table_name, ids=id_column, vectors=vector_column
+                    )
                 )
-            )
 
-            logging.info(f"Table '{table_name}' in database '{self.database}' created.")
+                logging.info(f"Table '{table_name}' created successfully in database '{self.database}'.")
         except errors.Error as e:
             logging.error(f"Error creating table: {e}")
             raise
 
-    async def ensure_db_and_table(
-        self, table_name: str, ids: str, vectors: str
-    ) -> None:
+    async def ensure_db_and_table(self, table_name: str, id_column: str, vector_column: str) -> None:
         """
-        Ensures the database and table exist, creating them if necessary.
+        Ensure that the database and table exist, creating them if necessary
 
-        :param table_name: The name of the table.
-        :param ids: The column name for unique identifiers.
-        :param vectors: The column name for storing vector data.
+        :param table_name: Table name.
+        :param id_column: Column name for unique IDs.
+        :param vector_column: Column name for vector data.
         """
         try:
             if not await self.check_db_exists():
-                logging.warning(
-                    f"Database '{self.database}' does not exist. Creating it..."
-                )
+                logging.warning(f"Database '{self.database}' does not exist. Creating...")
                 await self.create_database()
 
             if not await self.check_table_exists(table_name):
-                logging.warning(f"Table '{table_name}' does not exist. Creating it...")
-                await self.create_table(table_name, ids, vectors)
+                logging.warning(f"Table '{table_name}' does not exist. Creating...")
+                await self.create_table(table_name, id_column, vector_column)
 
-            logging.info(
-                f"Database '{self.database}' and table '{table_name}' are ready."
-            )
+            logging.info(f"Database '{self.database}' and table '{table_name}' are ready.")
         except Exception as e:
             logging.error(f"Error ensuring database and table: {e}")
             raise
