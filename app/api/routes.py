@@ -61,7 +61,7 @@ async def insert_data(request: InsertRequest):
         )
 
     except Exception as e:
-        logging.error(f"Insert error: {e}")
+        logging.error(f"Insert error: {e}", exc_info=True)
         raise handle_exception(e)
 
 
@@ -88,7 +88,7 @@ async def search_similar_vectors_db(
             result=similar_vectors,
         )
     except Exception as e:
-        logging.error(f"Search error: {e}")
+        logging.error(f"Search error: {e}", exc_info=True)
         raise handle_exception(e)
 
 
@@ -107,5 +107,5 @@ async def delete_records(
             result=None,
         )
     except Exception as e:
-        logging.error(f"Delete error: {e}")
+        logging.error(f"Delete error: {e}", exc_info=True)
         raise handle_exception(e)
