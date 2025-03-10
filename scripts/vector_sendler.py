@@ -1,3 +1,39 @@
+"""
+JSON API Client
+
+This script provides a command-line interface for interacting with a JSON-based API.
+It supports three main operations: insert, search, and delete. The script can process
+individual JSON files or directories containing multiple JSON files.
+
+Supported endpoints:
+- insertion: Sends data to the database for insertion.
+- Search: Requests data from the database that meets the specified criteria.
+- deletion: Sends a request to delete data from the database.
+
+Usage Examples:
+
+1. Insert data from a single JSON file:
+   python vector_sendler.py --endpoint insert --input_path data.json --output_path response.json
+
+2. Search for data with specific parameters:
+   python vector_sendler.py --endpoint search --input_path data.json --output_path search_results.json --count 5 --measure_type cosine
+
+3. Delete data using a JSON file:
+   python vector_sendler.py --endpoint delete --input_path data.json --output_path delete_response.json
+
+4. Process all JSON files in a directory:
+   python vector_sendler.py --endpoint insert --input_path data_directory/ --output_path responses/
+
+Arguments:
+--host: The host address of the API server (default: localhost).
+--port: The port number of the API server (default: 4000).
+--endpoint: The API endpoint to use (required, choices: insert, search, delete).
+--input_path: Path to the JSON file or directory containing JSON files.
+--output_path: Path to save the server's response or error details.
+--count: Number of results to return (for search only, default: 10).
+--measure_type: Distance measure type (for search only, choices: l2, cosine).
+"""
+
 import argparse
 import json
 import logging
@@ -108,13 +144,13 @@ class JSONSender:
 
 
 async def process_file(
-    input_path: str, output_file: str, host: str, port: int, endpoint: str
+    input_path: str, output_path: str, host: str, port: int, endpoint: str
 ) -> None:
     """
     Processes a single JSON file: downloads its data and sends it to the server.
 
      :param input_path: Path to the JSON file.
-     :param output_file: The path to save the response.
+     :param output_path: The path to save the response.
      :param host: The server host.
      :param port: The server port.
      :param endpoint: API endpoint.
@@ -124,13 +160,13 @@ async def process_file(
             data = json.load(json_file)
 
         if endpoint == "insert":
-            await JSONSender.send_insert(host, port, data, output_file)
+            await JSONSender.send_insert(host, port, data, output_path)
         elif endpoint == "search":
             await JSONSender.send_search(
-                host, port, data, output_file, count=10, measure_type="L2"
+                host, port, data, output_path, count=10, measure_type="L2"
             )
         elif endpoint == "delete":
-            await JSONSender.send_delete(host, port, data, output_file)
+            await JSONSender.send_delete(host, port, data, output_path)
         else:
             logging.error(f"Unknown endpoint: {endpoint}")
     except FileNotFoundError:
@@ -140,33 +176,33 @@ async def process_file(
 
 
 async def process_input(
-    input_path: str, output_file: str, host: str, port: int, endpoint: str
+    input_path: str, output_path: str, host: str, port: int, endpoint: str
 ) -> None:
     """
     Processes the input data: if it is a file, it sends it, if it is a directory, it processes all the JSON files in it.
 
      :param input_path: The path to the file or directory.
-     :param output_file: The path to the file or directory to save the response.
+     :param output_path: The path to the file to save the response.
      :param host: The server host.
      :param port: The server port.
      :param endpoint: API endpoint.
     """
     if os.path.isdir(input_path):
-        if not os.path.exists(output_file):
-            os.makedirs(output_file)
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
 
         tasks = []
         for filename in os.listdir(input_path):
             file_path = os.path.join(input_path, filename)
             if os.path.isfile(file_path) and filename.endswith(".json"):
-                response_path = os.path.join(output_file, f"response_{filename}")
+                response_path = os.path.join(output_path, f"response_{filename}")
                 tasks.append(
                     process_file(file_path, response_path, host, port, endpoint)
                 )
 
         await asyncio.gather(*tasks)
     else:
-        await process_file(input_path, output_file, host, port, endpoint)
+        await process_file(input_path, output_path, host, port, endpoint)
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -195,7 +231,7 @@ def parse_arguments() -> argparse.Namespace:
         help="The path to the JSON file or directory for uploading data",
     )
     parser.add_argument(
-        "--output_file",
+        "--output_path",
         default="response.json",
         help="Fail for saving server responses",
     )
@@ -209,7 +245,7 @@ def parse_arguments() -> argparse.Namespace:
         "--measure_type",
         choices=["l2", "cosine"],
         required=True,
-        help="Metrica (only for search)",
+        help="Metrica (for search only)",
     )
 
     return parser.parse_args()
@@ -220,7 +256,7 @@ async def main() -> None:
 
     args = parse_arguments()
     await process_input(
-        args.input_path, args.output_file, args.host, args.port, args.endpoint
+        args.input_path, args.output_path, args.host, args.port, args.endpoint
     )
 
 
