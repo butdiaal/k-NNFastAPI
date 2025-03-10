@@ -1,8 +1,16 @@
-version: '3.8'
-
 services:
+  consul:
+    image: hashicorp/consul:latest
+    container_name: consul
+    ports:
+      - "8500:8500"
+      - "8600:8600/udp"
+    command: "consul agent -dev -client=0.0.0.0"
+    networks:
+      - my_network
+
   clickhouse:
-    image: clickhouse/clickhouse-server
+    image: clickhouse
     container_name: some1-clickhouse-server
     networks:
       - my_network
@@ -10,10 +18,19 @@ services:
   app:
     build: .
     container_name: my-app
+    ports:
+      - "4000:4000"
     depends_on:
+      - consul
       - clickhouse
+    environment:
+      CONSUL_HOST: consul
+      CLICKHOUSE_HOST: some1-clickhouse-server
+      CLICKHOUSE_PORT: 9000
+      CLICKHOUSE_SERVICE_NAME: clickhouse-service
     networks:
       - my_network
+    entrypoint: [ "/bin/sh", "-c", "./app/register_service.sh && uvicorn app.main:app --host 0.0.0.0 --port 4000" ]
 
 networks:
   my_network:

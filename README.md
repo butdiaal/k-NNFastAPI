@@ -8,8 +8,6 @@ You can add, search for similar, and delete vectors.
 The service can be started using Docker:
 
 ```sh
-docker build -t fastapi_image .
-
 docker-compose down -v
 
 docker-compose up --build
