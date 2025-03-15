@@ -144,16 +144,24 @@ class JSONSender:
 
 
 async def process_file(
-    input_path: str, output_path: str, host: str, port: int, endpoint: str
+    input_path: str,
+    output_path: str,
+    host: str,
+    port: int,
+    endpoint: str,
+    count: int = 10,
+    measure_type: str = "l2",
 ) -> None:
     """
     Processes a single JSON file: downloads its data and sends it to the server.
 
-     :param input_path: Path to the JSON file.
-     :param output_path: The path to save the response.
-     :param host: The server host.
-     :param port: The server port.
-     :param endpoint: API endpoint.
+    :param input_path: Path to the JSON file.
+    :param output_path: The path to save the response.
+    :param host: The server host.
+    :param port: The server port.
+    :param endpoint: API endpoint.
+    :param count: Number of results to return (for search only).
+    :param measure_type: Distance measure type (for search only).
     """
     try:
         with open(input_path, "r") as json_file:
@@ -163,7 +171,7 @@ async def process_file(
             await JSONSender.send_insert(host, port, data, output_path)
         elif endpoint == "search":
             await JSONSender.send_search(
-                host, port, data, output_path, count=10, measure_type="L2"
+                host, port, data, output_path, count=count, measure_type=measure_type
             )
         elif endpoint == "delete":
             await JSONSender.send_delete(host, port, data, output_path)
@@ -176,16 +184,24 @@ async def process_file(
 
 
 async def process_input(
-    input_path: str, output_path: str, host: str, port: int, endpoint: str
+    input_path: str,
+    output_path: str,
+    host: str,
+    port: int,
+    endpoint: str,
+    count: int = 10,
+    measure_type: str = "l2",
 ) -> None:
     """
     Processes the input data: if it is a file, it sends it, if it is a directory, it processes all the JSON files in it.
 
-     :param input_path: The path to the file or directory.
-     :param output_path: The path to the file to save the response.
-     :param host: The server host.
-     :param port: The server port.
-     :param endpoint: API endpoint.
+    :param input_path: The path to the file or directory.
+    :param output_path: The path to the file to save the response.
+    :param host: The server host.
+    :param port: The server port.
+    :param endpoint: API endpoint.
+    :param count: Number of results to return (for search only).
+    :param measure_type: Distance measure type (for search only).
     """
     if os.path.isdir(input_path):
         if not os.path.exists(output_path):
@@ -197,12 +213,22 @@ async def process_input(
             if os.path.isfile(file_path) and filename.endswith(".json"):
                 response_path = os.path.join(output_path, f"response_{filename}")
                 tasks.append(
-                    process_file(file_path, response_path, host, port, endpoint)
+                    process_file(
+                        file_path,
+                        response_path,
+                        host,
+                        port,
+                        endpoint,
+                        count,
+                        measure_type,
+                    )
                 )
 
         await asyncio.gather(*tasks)
     else:
-        await process_file(input_path, output_path, host, port, endpoint)
+        await process_file(
+            input_path, output_path, host, port, endpoint, count, measure_type
+        )
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -256,7 +282,13 @@ async def main() -> None:
 
     args = parse_arguments()
     await process_input(
-        args.input_path, args.output_path, args.host, args.port, args.endpoint
+        args.input_path,
+        args.output_path,
+        args.host,
+        args.port,
+        args.endpoint,
+        args.count,
+        args.measure_type,
     )
 
 
