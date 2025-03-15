@@ -149,8 +149,8 @@ async def process_file(
     host: str,
     port: int,
     endpoint: str,
-    count: int = 10,
-    measure_type: str = "l2",
+    count: int = None,
+    measure_type: str = None,
 ) -> None:
     """
     Processes a single JSON file: downloads its data and sends it to the server.
@@ -212,23 +212,31 @@ async def process_input(
             file_path = os.path.join(input_path, filename)
             if os.path.isfile(file_path) and filename.endswith(".json"):
                 response_path = os.path.join(output_path, f"response_{filename}")
-                tasks.append(
-                    process_file(
-                        file_path,
-                        response_path,
-                        host,
-                        port,
-                        endpoint,
-                        count,
-                        measure_type,
+                if endpoint == "search":
+                    tasks.append(
+                        process_file(
+                            file_path,
+                            response_path,
+                            host,
+                            port,
+                            endpoint,
+                            count,
+                            measure_type,
+                        )
                     )
-                )
+                else:
+                    tasks.append(
+                        process_file(file_path, response_path, host, port, endpoint)
+                    )
 
         await asyncio.gather(*tasks)
     else:
-        await process_file(
-            input_path, output_path, host, port, endpoint, count, measure_type
-        )
+        if endpoint == "search":
+            await process_file(
+                input_path, output_path, host, port, endpoint, count, measure_type
+            )
+        else:
+            await process_file(input_path, output_path, host, port, endpoint)
 
 
 def parse_arguments() -> argparse.Namespace:
