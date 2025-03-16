@@ -41,6 +41,8 @@ import aiohttp
 import asyncio
 import os
 
+from aiohttp import ClientResponse
+
 logging.basicConfig(level=logging.INFO)
 
 
@@ -57,7 +59,7 @@ async def is_host_available(host: str, port: int, timeout: int = 5) -> bool:
         reader, writer = await asyncio.wait_for(
             asyncio.open_connection(host, port), timeout=timeout
         )
-        writer.close()
+        await writer.close()
         await writer.wait_closed()
         return True
     except (asyncio.TimeoutError, ConnectionRefusedError, OSError) as e:
@@ -101,10 +103,11 @@ class JSONSender:
 
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.post(
+                response: ClientResponse
+                async with await session.post(
                     url, headers=headers, json=data, params=params
                 ) as response:
-                    response.raise_for_status()
+                    await response.raise_for_status()
                     response_data = await response.json()
 
                     with open(output_file, "w") as file:
@@ -130,8 +133,8 @@ class JSONSender:
         port: int,
         data: dict,
         output_file: str,
-        count: int = 10,
-        measure_type: str = "l2",
+        count: int = None,
+        measure_type: str = None,
     ) -> None:
         """Method for sending a search query with parameters."""
         data.update({"measure_type": measure_type, "count": count})
@@ -189,8 +192,8 @@ async def process_input(
     host: str,
     port: int,
     endpoint: str,
-    count: int = 10,
-    measure_type: str = "l2",
+    count: int = None,
+    measure_type: str = None,
 ) -> None:
     """
     Processes the input data: if it is a file, it sends it, if it is a directory, it processes all the JSON files in it.
@@ -208,6 +211,7 @@ async def process_input(
             os.makedirs(output_path)
 
         tasks = []
+
         for filename in os.listdir(input_path):
             file_path = os.path.join(input_path, filename)
             if os.path.isfile(file_path) and filename.endswith(".json"):
