@@ -68,7 +68,7 @@ async def is_host_available(host: str, port: int, timeout: int = 5) -> bool:
 
 
 class JSONSender:
-    """Class for sending JSON data to a specified API endpoint."""
+    """A utility class for sending JSON data to a specified API endpoint."""
 
     @staticmethod
     async def send_request(
