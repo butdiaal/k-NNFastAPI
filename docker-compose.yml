@@ -12,6 +12,14 @@ services:
   clickhouse:
     image: clickhouse
     container_name: some1-clickhouse-server
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8123" ]
+      interval: 5s
+      timeout: 10s
+      retries: 10
     networks:
       - my_network
 
@@ -21,8 +29,10 @@ services:
     ports:
       - "4000:4000"
     depends_on:
-      - consul
-      - clickhouse
+      consul:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
     environment:
       CONSUL_HOST: consul
       CLICKHOUSE_HOST: some1-clickhouse-server
