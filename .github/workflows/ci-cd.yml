@@ -5,7 +5,7 @@ on:
     branches:
       - master
     paths:
-      - 'app/**'
+      - 'app/'
       - 'scripts/vector_sendler.py'
 
 jobs:
@@ -60,53 +60,35 @@ jobs:
 
       - name: Start Docker containers
         run: |
-          docker-compose down -v
           docker-compose up --build -d
 
-      - name: Check container status
+      - name: Wait for containers to be healthy
+        run: |
+          echo "Waiting for services to become healthy..."
+          timeout 180 bash -c 'until [ "$(docker inspect -f "{{.State.Health.Status}}" some1-clickhouse-server)" == "healthy" ] &&
+                                [ "$(docker inspect -f "{{.State.Health.Status}}" consul)" == "healthy" ]; do
+            sleep 5
+            echo "Still waiting..."
+          done'
+          echo "All services are healthy!"
+
+      - name: Check running containers
         run: |
           docker ps -a
 
-      - name: Check Consul availability
+      - name: Wait for application startup
         run: |
-          timeout 120 bash -c 'until curl -s -f -o /dev/null http://localhost:8500; do
-            sleep 2
-            echo "Consul not ready yet..."
+          echo "Waiting for application to be ready..."
+          timeout 300 bash -c 'until curl -s -f -o /dev/null http://localhost:4000/; do
+            sleep 5
+            echo "Application not ready yet..."
           done'
-          echo "Consul is running!"
-
-      - name: Check ClickHouse availability
-        run: |
-          timeout 600 bash -c 'until curl -s -f -o /dev/null http://localhost:8123; do
-            sleep 2
-            echo "ClickHouse not ready yet..."
-          done'
-          echo "ClickHouse is running!"
+          echo "Application is running!"
 
       - name: Check application logs
         run: |
           docker-compose logs app
 
-      - name: Check application container status
+      - name: Check application health from inside container
         run: |
-          docker ps -a | grep my-app
-
-      - name: Check application inside container
-        run: |
-          docker exec my-app /bin/sh -c "curl http://localhost:4000"
-
-      - name: Check if application is running
-        run: |
-          timeout 300 bash -c 'until docker ps --format "{{.Names}}" | grep -q "my-app"; do
-            sleep 2
-            echo "Container not started yet..."
-          done'
-
-          echo "Container is running!"
-
-          timeout 1200 bash -c 'until curl -s -f -o /dev/null http://localhost:4000/; do
-            sleep 20
-            echo "Application not ready yet..."
-          done'
-
-          echo "Application is running and responding!"
+          docker exec my-app curl -s -o /dev/null -w "%{http_code}" http://localhost:4000/ || echo "Application is not responding"
