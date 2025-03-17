@@ -95,9 +95,9 @@ jobs:
         run: |
           docker ps -a | grep my-app
 
-      - name: Check application availability manually
+      - name: Check application inside container
         run: |
-          docker exec my-app curl http://localhost:4000
+          docker exec -it my-app /bin/sh -c "curl http://localhost:4000"
 
       - name: Check if application is running
         run: |
@@ -105,12 +105,12 @@ jobs:
             sleep 2
             echo "Container not started yet..."
           done'
-          
+
           echo "Container is running!"
-          
-          timeout 2400 bash -c 'until curl -s -f -o /dev/null http://localhost:4000/; do
+
+          timeout 1200 bash -c 'until curl -s -f -o /dev/null http://localhost:4000/; do
             sleep 20
             echo "Application not ready yet..."
           done'
-          
+
           echo "Application is running and responding!"
