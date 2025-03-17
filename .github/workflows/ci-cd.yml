@@ -88,7 +88,3 @@ jobs:
       - name: Check application logs
         run: |
           docker-compose logs app
-
-      - name: Check application health from inside container
-        run: |
-          docker exec my-app curl -s -o /dev/null -w "%{http_code}" http://localhost:4000/ || echo "Application is not responding"
