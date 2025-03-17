@@ -63,18 +63,24 @@ jobs:
           docker-compose down -v
           docker-compose up --build -d
 
+      - name: Run additional FastAPI container
+        run: |
+          docker run -d --name my_fastapi_app -p 4000:8000 fastapi_image
+
       - name: Check if application is running
         run: |
-          until docker ps --format "{{.Names}}" | grep -q "my-app"; do
-            sleep 30
-            echo "Application not ready yet..."
-          done
+          timeout 300 bash -c 'until docker ps --format "{{.Names}}" | grep -q "my_fastapi_app"; do
+            sleep 2
+            echo "Container not started yet..."
+          done'
           
           echo "Container is running!"
-  
-          until curl -s -f -o /dev/null http://localhost:4000/; do
-            sleep 30
+          
+          echo "Waiting for the application to be ready..."
+          
+          timeout 300 bash -c 'until curl -s -f -o /dev/null http://localhost:4000/; do
+            sleep 5
             echo "Application not ready yet..."
-          done
+          done'
           
           echo "Application is running and responding!"
