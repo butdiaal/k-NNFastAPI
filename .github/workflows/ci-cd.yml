@@ -65,10 +65,16 @@ jobs:
 
       - name: Check if application is running
         run: |
-          echo "Waiting for the application to start..."
-
-          timeout 120 bash -c 'until docker ps --format "{{.Names}}" | grep -q "my-app"; do sleep 5; echo "Waiting for container to start..."; done'
+          until docker ps --format "{{.Names}}" | grep -q "my-app"; do
+          sleep 2
+          echo "Container not started yet..."
+          done
           
-          timeout 120 bash -c 'until curl -s -f -o /dev/null http://localhost:4000/; do sleep 5; echo "Waiting for application to be ready..."; done'
+          echo "Container is running!"
+  
+          until curl -s -f -o /dev/null http://localhost:4000/; do
+            sleep 2
+            echo "Application not ready yet..."
+          done
           
           echo "Application is running and responding!"
