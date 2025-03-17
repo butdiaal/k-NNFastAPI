@@ -63,10 +63,6 @@ jobs:
           docker-compose down -v
           docker-compose up --build -d
 
-      - name: Check container logs
-        run: |
-          docker-compose logs
-
       - name: Check container status
         run: |
           docker ps -a
@@ -97,7 +93,7 @@ jobs:
 
       - name: Check application inside container
         run: |
-          docker exec -it my-app /bin/sh -c "curl http://localhost:4000"
+          docker exec my-app /bin/sh -c "curl http://localhost:4000"
 
       - name: Check if application is running
         run: |
