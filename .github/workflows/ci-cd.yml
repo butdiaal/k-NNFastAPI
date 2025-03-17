@@ -65,21 +65,24 @@ jobs:
 
       - name: Run additional FastAPI container
         run: |
-          docker run -d --name my_fastapi_app -p 4000:8000 fastapi_image
+
+          if docker ps -a --format "{{.Names}}" | grep -q "my_fastapi_app"; then
+            echo "Container my_fastapi_app already exists. Skipping..."
+          else
+            docker run -d --name my_fastapi_app -p 4000:8000 fastapi_image
+          fi
 
       - name: Check if application is running
         run: |
-          timeout 300 bash -c 'until docker ps --format "{{.Names}}" | grep -q "my_fastapi_app"; do
+          timeout 120 bash -c 'until docker ps --format "{{.Names}}" | grep -q "my_fastapi_app"; do
             sleep 2
             echo "Container not started yet..."
           done'
           
           echo "Container is running!"
           
-          echo "Waiting for the application to be ready..."
-          
-          timeout 300 bash -c 'until curl -s -f -o /dev/null http://localhost:4000/; do
-            sleep 5
+          timeout 600 bash -c 'until curl -s -f -o /dev/null http://localhost:4000/; do
+            sleep 20
             echo "Application not ready yet..."
           done'
           
