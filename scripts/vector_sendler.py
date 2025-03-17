@@ -80,7 +80,7 @@ class JSONSender:
         params: dict = None,
     ) -> None:
         """
-        Send JSON-data to the specified API endpoint and save the response or error to a file.
+        Send JSON data to the specified API endpoint and save the response or error to a file.
 
         :param host: The host address of the API server.
         :param port: The port number of the API server.
