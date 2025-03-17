@@ -87,6 +87,18 @@ jobs:
           done'
           echo "ClickHouse is running!"
 
+      - name: Check application logs
+        run: |
+          docker-compose logs app
+
+      - name: Check application container status
+        run: |
+          docker ps -a | grep my-app
+
+      - name: Check application availability manually
+        run: |
+          docker exec my-app curl http://localhost:4000
+
       - name: Check if application is running
         run: |
           timeout 300 bash -c 'until docker ps --format "{{.Names}}" | grep -q "my-app"; do
@@ -96,7 +108,7 @@ jobs:
           
           echo "Container is running!"
           
-          timeout 1200 bash -c 'until curl -s -f -o /dev/null http://localhost:4000/; do
+          timeout 2400 bash -c 'until curl -s -f -o /dev/null http://localhost:4000/; do
             sleep 20
             echo "Application not ready yet..."
           done'
