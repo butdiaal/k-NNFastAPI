@@ -41,7 +41,7 @@ services:
     environment:
       CONSUL_HOST: consul
       CLICKHOUSE_HOST: some1-clickhouse-server
-      CLICKHOUSE_PORT: 8123
+      CLICKHOUSE_PORT: 9000
       CLICKHOUSE_SERVICE_NAME: clickhouse-service
     networks:
       - my_network
