@@ -63,14 +63,15 @@ jobs:
           docker-compose down -v
           docker-compose up --build -d
 
+      - name: Remove existing container if it exists
+        run: |
+          if docker ps -a --format "{{.Names}}" | grep -q "my_fastapi_app"; then
+            docker rm -f my_fastapi_app
+          fi
+
       - name: Run additional FastAPI container
         run: |
-
-          if docker ps -a --format "{{.Names}}" | grep -q "my_fastapi_app"; then
-            echo "Container my_fastapi_app already exists. Skipping..."
-          else
-            docker run -d --name my_fastapi_app -p 4000:8000 fastapi_image
-          fi
+          docker run -d --name my_fastapi_app -p 4000:8000 fastapi_image
 
       - name: Check if application is running
         run: |
