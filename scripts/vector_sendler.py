@@ -196,7 +196,8 @@ async def process_input(
     measure_type: str = None,
 ) -> None:
     """
-    Processes input data: if a file is specified, data is sent from it; if a folder is specified, all JSON files inside it are processed.
+    Processes input data: if a file is specified, data is sent from it; if a folder is specified,
+    all JSON files inside it are processed.
 
     :param input_path: The path to the file or directory.
     :param output_path: The path to the file to save the response.
