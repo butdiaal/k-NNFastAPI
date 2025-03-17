@@ -5,7 +5,7 @@ on:
     branches:
       - master
     paths:
-      - 'app/'
+      - 'app/**'
       - 'scripts/vector_sendler.py'
 
 jobs:
@@ -60,17 +60,40 @@ jobs:
 
       - name: Start Docker containers
         run: |
+          docker-compose down -v
           docker-compose up --build -d
 
-      - name: Wait for containers to be healthy
+      - name: Check container logs
         run: |
-          echo "Waiting for services to become healthy..."
-          timeout 180 bash -c 'until [ "$(docker inspect -f "{{.State.Health.Status}}" some1-clickhouse-server)" == "healthy" ] &&
-                                [ "$(docker inspect -f "{{.State.Health.Status}}" consul)" == "healthy" ]; do
-            sleep 5
-            echo "Still waiting..."
+          docker-compose logs
+
+      - name: Check container status
+        run: |
+          docker ps -a
+
+      - name: Check Consul availability
+        run: |
+          timeout 120 bash -c 'until curl -s -f -o /dev/null http://localhost:8500; do
+            sleep 2
+            echo "Consul not ready yet..."
           done'
-          echo "All services are healthy!"
+          echo "Consul is running!"
+
+      - name: Check ClickHouse availability
+        run: |
+          timeout 600 bash -c 'until curl -s -f -o /dev/null http://localhost:8123; do
+            sleep 2
+            echo "ClickHouse not ready yet..."
+          done'
+          echo "ClickHouse is running!"
+
+      - name: Check application logs
+        run: |
+          docker-compose logs app
+
+      - name: Check application container status
+        run: |
+          docker ps -a | grep my-app
 
       - name: Check running containers
         run: |
@@ -85,6 +108,3 @@ jobs:
           done'
           echo "Application is running!"
 
-      - name: Check application logs
-        run: |
-          docker-compose logs app
