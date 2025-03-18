@@ -23,8 +23,8 @@ docker run -d --name my_fastapi_app -p 4000:8000  fastapi_image
   ```json
   {
     "data": [
-      ["id1", [0.1, 0.2, 0.3]],
-      ["id2", [0.4, 0.5, 0.6]]
+      [""550e8400-e29b-41d4-a716-446655440000"", [0.1, 0.2, 0.3, ..., 0.512]],
+      [""f47ac10b-58cc-4372-a567-0e02b2c3d479"", [0.1, 0.2, 0.3, ..., 0.512]]
     ]
   }
 
@@ -42,7 +42,7 @@ docker run -d --name my_fastapi_app -p 4000:8000  fastapi_image
 - **Request Body**:
   ```json
   {
-    "vectors": [[0.1, 0.2, 0.3]],
+    "vectors": [[0.1, 0.2, 0.3, ..., 0.512]],
     "measure_type": "l2",
     "count": 5
   }
@@ -52,8 +52,8 @@ docker run -d --name my_fastapi_app -p 4000:8000  fastapi_image
    "status": "success",
    "message": "Successfully retrieved similar vectors.",
    "result": [
-        ["id1", 0.99],
-        ["id2", 0.85]
+        ["550e8400-e29b-41d4-a716-446655440000", 0.90],
+        ["f47ac10b-58cc-4372-a567-0e02b2c3d479", 0.85]
    ]
 
 ⸻
@@ -64,7 +64,7 @@ docker run -d --name my_fastapi_app -p 4000:8000  fastapi_image
 - **Request Body**:
   ```json
   {
-    "ids": ["id1", "id2"]
+    "ids": ["550e8400-e29b-41d4-a716-446655440000", "f47ac10b-58cc-4372-a567-0e02b2c3d479"]
   }
 
 - **Response example**:
