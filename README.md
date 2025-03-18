@@ -11,8 +11,6 @@ The service can be started using Docker:
 docker-compose down -v
 
 docker-compose up --build
-
-docker run -d --name my_fastapi_app -p 4000:8000  fastapi_image 
 ```
 
 ## API Endpoints
