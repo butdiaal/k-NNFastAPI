@@ -63,10 +63,6 @@ jobs:
           docker-compose down -v
           docker-compose up --build -d
 
-      - name: Check container logs
-        run: |
-          docker-compose logs
-
       - name: Check container status
         run: |
           docker ps -a
@@ -91,13 +87,6 @@ jobs:
         run: |
           docker-compose logs app
 
-      - name: Check application container status
-        run: |
-          docker ps -a | grep my-app
-
-      - name: Check running containers
-        run: |
-          docker ps -a
 
       - name: Wait for application startup
         run: |
